@@ -31,11 +31,12 @@ print(search())
 weighted metrics:
 
 ```
-    metric = simtrie.Metric(
-        (('c', None), 1.9),  # deletion cost
-        (('ab', 'ba'), 1.5)  # transpose cost
-    )
-	s.similar("bookish", 2, metric, allow_transpose=True)
+metric = simtrie.Metric(
+    (('c', None), 1.9),  # deletion cost
+    (('ab', 'ba'), 1.5)  # transpose cost
+)
+
+s.similar("bookish", 2, metric, allow_transpose=True)
 ```
 
 Some of simtrie's features:
@@ -50,8 +51,8 @@ architectures (they are either little or big endian).
 
 # Credits
 
-`simtrie` is a fork of pytrie/dawg. Its internal data structure
-is a very clever C++ implementation of a DAFSA by Susumu Yata.
+`simtrie` is a fork of https://github.com/pytries/DAWG. Its internal
+data structure is a very clever C++ implementation of a DAFSA by Susumu Yata.
 
 Various test cases and ideas were taken from the super clean
 implementation at https://github.com/infoscout/weighted-levenshtein/.

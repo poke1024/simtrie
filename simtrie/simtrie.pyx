@@ -389,6 +389,22 @@ cdef class Set:
 			key = nearest.key()[:nearest.key_length()].decode("utf8")
 			yield key, nearest.cost()
 
+	def lcs(self, search, min_length=3):
+		cdef LCS lcs
+		cdef str key
+
+		lcs.set_dic(self.dct)
+		lcs.set_guide(self.guide)
+
+		cdef bytes b_search = search.encode('utf8')
+		lcs.start(b_search, len(b_search), min_length)
+
+		while lcs.next():
+			seq = lcs.lcs()[:lcs.lcs_length()].decode("utf8")
+			key = lcs.key()[:lcs.key_length()].decode("utf8")
+			yield seq, key
+
+
 	def __contains__(self, key):
 		cdef bytes b_key
 		if isinstance(key, bytes):

@@ -268,6 +268,25 @@ cdef extern from "../lib/dawgdic/similar.h" namespace "dawgdic" nogil:
 		bint set_split_cost(const UCharType a, const UCharType b1, const UCharType b2, CostType cost)
 		bint set_merge_cost(const UCharType a1, const UCharType a2, const UCharType b, CostType cost)
 
+	cdef cppclass LCS:
+		LCS()
+
+		void set_dic(Dictionary &dic)
+		void set_guide(Guide &guide)
+
+		# These member functions are available only when Next() returns true.
+		char *key()
+		SizeType key_length()
+		ValueType value()
+		char *lcs()
+		SizeType lcs_length()
+
+		# Starts completing keys from given index and prefix.
+		void start(char *s, size_t len, int min_length) nogil
+
+		# Gets the next key.
+		bint next() nogil
+
 	cdef cppclass Similar[CostType]:
 		Similar()
 

@@ -330,9 +330,128 @@ public:
 	}
 };
 
+class LCS {
+	typedef int16_t IndexType;
+
+	DFS<LCS> dfs_;
+	std::vector<UCharType> word_;
+	Matrix<IndexType> C_;
+	IndexType min_length_;
+	std::vector<UCharType> result_;
+
+protected:
+	friend class DFS<LCS>;
+
+	void backtrack(const UCharType * const a, const UCharType * const b, SizeType i, SizeType j) {
+		result_.clear();
+
+		while (i > 0 && j > 0) {
+	        if (a[i] == b[j]) {
+	            result_.push_back(a[i]);
+	            i -= 1;
+	            j -= 1;
+	        } else {
+		        if (C_[i][j - 1] > C_[i - 1][j]) {
+			        j -= 1;
+		        } else {
+			        i -= 1;
+		        }
+	        }
+        }
+
+        std::reverse(result_.begin(), result_.end());
+        assert(result_.size() == C_[i][C_.columns() - 1]);
+	}
+
+	inline std::tuple<bool, bool> on_step() {
+		const int i = dfs_.key().size();
+		assert(i >= 1);
+
+		const SizeType columns = C_.columns();
+		IndexType *row_i = C_.allocate(i);
+		IndexType *row_i_1 = row_i - columns;
+		row_i[0] = 0; // C[i,0] = 0
+
+		const UCharType * const a = dfs_.key().data() - 1;
+		const UCharType * const b = word_.data() - 1;
+
+		for (SizeType j = 1; j < columns; j++) {
+		    if (a[i] == b[j]) {
+		        // C[i,j] := C[i-1,j-1] + 1
+		        row_i[j] = row_i_1[j - 1] + 1;
+		    } else {
+		        // C[i,j] := max(C[i,j-1], C[i-1,j])
+		        row_i[j] = std::max(row_i[j - 1], row_i_1[j]);
+		    }
+	    }
+
+	    if (dfs_.has_value()) {
+	        const IndexType lcs = row_i[columns - 1];
+	        if (lcs >= min_length_) {
+	            backtrack(a, b, i, columns - 1);
+				return std::make_tuple(true, true);
+	        }
+	    }
+
+		return std::make_tuple(true, false);
+	}
+
+	inline void on_ascend() {
+	}
+
+public:
+	LCS() : dfs_(this) {
+	}
+
+	void set_dic(const Dictionary &dic) {
+		dfs_.set_dic(dic);
+	}
+
+	void set_guide(const Guide &guide) {
+		dfs_.set_guide(guide);
+	}
+
+	void start(const char *s, const size_t len, const IndexType min_length = 3) {
+		word_.clear();
+		word_.insert(word_.begin(), s, s + len);
+		result_.reserve(len);
+
+		C_.set_columns(len + 1);
+		IndexType *row = C_.allocate(0);
+		for (SizeType j = 0; j < C_.columns(); j++) {
+			row[j] = 0; // C[0,j] = 0
+		}
+
+		dfs_.start(10); // FIXME
+
+		min_length_ = min_length;
+	}
+
+	bool next() {
+		return dfs_.next();
+	}
+
+	// These member functions are available only when next() returns true.
+	inline const char *key() const {
+		return reinterpret_cast<const char *>(dfs_.key().data());
+	}
+	inline SizeType key_length() const {
+		return dfs_.key().size();
+	}
+	inline ValueType value() const {
+		return dfs_.value();
+	}
+	inline const char *lcs() const {
+		return reinterpret_cast<const char *>(result_.data());
+	}
+	inline SizeType lcs_length() const {
+		return result_.size();
+	}
+};
+
 template<typename CostType>
 class Similar {
-	DFS<Similar> dfs;
+	DFS<Similar> dfs_;
 
 	const Costs<CostType> *costs_;
 	std::vector<CostType> cached_insert_cost_;
@@ -367,10 +486,11 @@ class Similar {
 
 	template<bool Transpose, bool UnionSplit>
 	inline std::tuple<bool, bool> compute_cost_fast() {
-		const int i = dfs.key().size();
+		const int i = dfs_.key().size();
 		assert(i >= 1);
 
-		const UCharType * const a = dfs.key().data() - 1;
+		const UCharType * const a = dfs_.key().data() - 1;
+		const UCharType * const b = word_.data() - 1;
 	    const UCharType a_i = a[i];
 
 		const auto &costs = *costs_;
@@ -383,7 +503,6 @@ class Similar {
 
 		row_i[0] = row_i_1[0] + delete_cost_a_i; // d[i, 0]
 
-		const UCharType * const b = word_.data() - 1;
 		SizeType db = 0;
 		CostType row_i_j_1 = row_i[0]; // always row[i][j - 1]
 		CostType smallest = row_i_j_1;
@@ -458,7 +577,7 @@ class Similar {
 
 		const CostType best_cost = row_i[columns - 1];
 		const bool descend = (smallest <= max_cost_); // descend further?
-		if (best_cost <= max_cost_ && dfs.has_value()) {
+		if (best_cost <= max_cost_ && dfs_.has_value()) {
 			found_cost_ = best_cost;
 			return std::make_tuple(descend, true);
 		} else {
@@ -486,16 +605,16 @@ protected:
 
 	inline void on_ascend() {
 		if (allow_.transpose) {
-			const int i = dfs.key().size();
+			const int i = dfs_.key().size();
 			assert(i >= 1);
-			const UCharType * const a = dfs.key().data() - 1;
+			const UCharType * const a = dfs_.key().data() - 1;
 		    da_[a[i]] = da_rollback_[i];
 		}
 	}
 
 
 public:
-	Similar() : dfs(this), costs_(nullptr) {
+	Similar() : dfs_(this), costs_(nullptr) {
 
 		allow_.transpose = 0;
 		allow_.split = 0;
@@ -503,11 +622,11 @@ public:
 	}
 
 	void set_dic(const Dictionary &dic) {
-		dfs.set_dic(dic);
+		dfs_.set_dic(dic);
 	}
 
 	void set_guide(const Guide &guide) {
-		dfs.set_guide(guide);
+		dfs_.set_guide(guide);
 	}
 
 	void set_costs(const Costs<CostType> &costs) {
@@ -516,13 +635,13 @@ public:
 
 	// These member functions are available only when next() returns true.
 	inline const char *key() const {
-		return reinterpret_cast<const char *>(dfs.key().data());
+		return reinterpret_cast<const char *>(dfs_.key().data());
 	}
 	inline SizeType key_length() const {
-		return dfs.key().size();
+		return dfs_.key().size();
 	}
 	inline ValueType value() const {
-		return dfs.value();
+		return dfs_.value();
 	}
 	inline CostType cost() const {
 		return found_cost_;
@@ -557,7 +676,7 @@ public:
 		max_cost_ = std::max(CostType(0), max_cost);
 		const int max_expected_depth = len * 2 + 1;
 
-		dfs.start(max_expected_depth);
+		dfs_.start(max_expected_depth);
 
 		distances_.reserve(max_expected_depth);
 		cached_insert_cost_.resize(len);
@@ -581,7 +700,7 @@ public:
 	}
 
 	bool next() {
-		return dfs.next();
+		return dfs_.next();
 	}
 };
 

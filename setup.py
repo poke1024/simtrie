@@ -7,7 +7,7 @@ from Cython.Build import cythonize
 
 setup(
     name="simtrie",
-    version="0.8.0",
+    version="1.0.0",
     description="An efficient data structure for fast string similarity searches",
     author='Bernhard Liebl',
     author_email='poke1024@gmx.de',

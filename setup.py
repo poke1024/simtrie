@@ -28,7 +28,8 @@ setup(
     install_requires=[
         "numpy>=1.15.0",
         "msgpack>=0.6.1",
-        "tqdm>=4.31.0"
+        "tqdm>=4.31.0",
+        "cython>=0.29.14"
     ],
 
     python_requires=">=3.7",

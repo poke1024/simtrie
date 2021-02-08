@@ -32,7 +32,7 @@ setup(
         "cython>=0.29.14"
     ],
 
-    python_requires=">=3.7",
+    python_requires=">=3.6",
 
     classifiers=[
         'Development Status :: 4 - Beta',
